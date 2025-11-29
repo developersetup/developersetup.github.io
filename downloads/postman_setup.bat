@@ -2,15 +2,15 @@
 setlocal enabledelayedexpansion
 
 :: ============================================
-::         KUBECTL CLI SETUP TOOL
+::              POSTMAN SETUP TOOL
 :: ============================================
 
 cls
 echo ====================================================
-echo               KUBECTL INSTALLER TOOL
+echo                POSTMAN INSTALLER TOOL
 echo ====================================================
-echo 1. Install kubectl
-echo 2. Uninstall kubectl
+echo 1. Install Postman
+echo 2. Uninstall Postman
 echo 3. Exit
 echo ====================================================
 set /p choice="Enter your choice: "
@@ -22,70 +22,34 @@ exit /b
 
 
 :: ====================================================
-::                INSTALL KUBECTL
+::             INSTALL POSTMAN
 :: ====================================================
 :install
 cls
 echo ===============================
-echo        INSTALLING KUBECTL
+echo        INSTALLING POSTMAN
 echo ===============================
-echo Enter kubectl Version (Example: 1.29.2)
-echo Leave blank to install LATEST stable version.
-echo.
-set /p VER="Version: "
 
-if "%VER%"=="" (
-    echo Detecting latest stable version...
-    powershell -command "(Invoke-WebRequest 'https://storage.googleapis.com/kubernetes-release/release/stable.txt').Content" > kube_latest.txt
+echo Downloading latest Postman Desktop installer...
 
-    set /p VER=<kube_latest.txt
-    del kube_latest.txt
+set "POSTMAN_URL=https://dl.pstmn.io/download/latest/win64"
 
-    if "%VER%"=="" (
-        echo ERROR: Could not detect latest kubectl version.
-        pause
-        exit /b
-    )
-)
+powershell -command "try { Invoke-WebRequest '%POSTMAN_URL%' -OutFile 'postman.exe' -ErrorAction Stop } catch { exit 1 }"
 
-:: Ensure version starts with v
-if "%VER:~0,1%"=="v" (
-    set KVER=%VER%
-) else (
-    set KVER=v%VER%
-)
-
-set "KUBECTL_URL=https://storage.googleapis.com/kubernetes-release/release/%KVER%/bin/windows/amd64/kubectl.exe"
-
-echo.
-echo Download URL:
-echo %KUBECTL_URL%
-
-echo.
-echo Downloading kubectl %KVER% ...
-powershell -command "try { Invoke-WebRequest '%KUBECTL_URL%' -OutFile 'kubectl.exe' -ErrorAction Stop } catch { exit 1 }"
-
-if %ERRORLEVEL% NEQ 0 (
-    echo ERROR: Failed to download kubectl.
+if %ERRORLEVEL% neq 0 (
+    echo ERROR: Failed to download Postman installer!
     pause
     exit /b
 )
 
-echo Installing kubectl...
-mkdir "C:\kubectl" 2>nul
-move /y kubectl.exe "C:\kubectl\" >nul
-
-echo Adding C:\kubectl to PATH...
-setx PATH "%PATH%;C:\kubectl" >nul
-
-echo.
-echo Verifying installation...
-"C:\kubectl\kubectl.exe" version --client
+echo Installing Postman silently...
+start /wait "" postman.exe /S
+del postman.exe
 
 echo.
 echo ====================================================
-echo kubectl %KVER% installed successfully!
-echo Location: C:\kubectl\kubectl.exe
+echo Postman installed successfully!
+echo Launch from Start Menu or Desktop.
 echo ====================================================
 pause
 exit /b
@@ -93,25 +57,33 @@ exit /b
 
 
 :: ====================================================
-::               UNINSTALL KUBECTL
+::            UNINSTALL POSTMAN
 :: ====================================================
 :uninstall
 cls
 echo ===============================
-echo     UNINSTALLING KUBECTL
+echo      UNINSTALLING POSTMAN
 echo ===============================
 
-if exist "C:\kubectl\kubectl.exe" (
-    del /f /q "C:\kubectl\kubectl.exe"
-    rmdir /s /q "C:\kubectl"
+echo Searching for Postman installation directory...
+
+:: Default installation path
+set "POSTDIR=%LOCALAPPDATA%\Postman"
+
+if exist "%POSTDIR%" (
+    echo Removing Postman directory...
+    rmdir /s /q "%POSTDIR%"
+) else (
+    echo Postman installation directory not found.
 )
 
-echo Removing PATH entry (restart required)...
+echo Removing shortcuts (if any)...
+del "%USERPROFILE%\Desktop\Postman.lnk" 2>nul
+del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Postman.lnk" 2>nul
 
 echo.
 echo ====================================================
-echo kubectl has been removed.
-echo Restart your system to refresh PATH.
+echo Postman has been removed completely.
 echo ====================================================
 pause
 exit /b
